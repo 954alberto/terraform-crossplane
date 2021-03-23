@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crossplane-system
+---
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: crossplane
+  namespace: crossplane-system
+spec:
+  releaseName: crossplane
+  chart:
+    repository: https://charts.crossplane.io/master/
+    name: crossplane
+    version: 1.0.0
+  values:
+    image:
+      repository: crossplane/crossplane
+      tag: v1.1.0
+    leaderElection: false
+    rbacManager:
+      deploy: false
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws
+  namespace: crossplane-system
+spec:
+  package: crossplane/provider-aws:master
+---
