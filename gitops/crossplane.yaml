@@ -26,8 +26,28 @@ spec:
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
-  name: provider-aws
+  name: default
   namespace: crossplane-system
 spec:
   package: crossplane/provider-aws:master
+  controllerConfigRef:
+    name: aws-config
+---
+apiVersion: aws.crossplane.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  credentials:
+    source: InjectedIdentity
+---
+apiVersion: pkg.crossplane.io/v1alpha1
+kind: ControllerConfig
+metadata:
+  name: default
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::575558793282:role/role-eks-crossplane
+spec:
+  podSecurityContext:
+    fsGroup: 2000
 ---
