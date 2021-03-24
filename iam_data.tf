@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "policy_crossplane_k8s_assume_role_policy" {
       test     = "StringEquals"
       variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
       values = [
-        "system:serviceaccount:crossplane-system:crossplane"
+        "system:serviceaccount:crossplane-system:provider-aws-*"
       ]
     }
 
