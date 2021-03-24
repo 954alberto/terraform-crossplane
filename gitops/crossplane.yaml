@@ -30,8 +30,6 @@ metadata:
   namespace: crossplane-system
 spec:
   package: crossplane/provider-aws:master
-  controllerConfigRef:
-    name: aws-config
 ---
 apiVersion: aws.crossplane.io/v1beta1
 kind: ProviderConfig
