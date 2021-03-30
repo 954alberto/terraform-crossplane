@@ -33,8 +33,8 @@ locals {
       groups   = ["system:masters"]
     },
     {
-      rolearn  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/role1"
-      username = "role1"
+      rolearn  = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/role2"
+      username = "role2"
       groups   = ["system:masters"]
     },
   ]
