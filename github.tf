@@ -60,3 +60,14 @@ resource "github_repository_file" "crossplane" {
   commit_email        = "terraform@example.com"
   overwrite_on_create = true
 }
+
+resource "github_repository_file" "rdspostgresql" {
+  repository          = github_repository.gitops.name
+  branch              = "main"
+  file                = "rdspostgresql.yaml"
+  content             = file("${path.module}/gitops/rdspostgresql.yaml")
+  commit_message      = "Managed by Terraform"
+  commit_author       = "Terraform User"
+  commit_email        = "terraform@example.com"
+  overwrite_on_create = true
+}

@@ -4,37 +4,699 @@ kind: Namespace
 metadata:
   name: crossplane-system
 ---
-apiVersion: helm.fluxcd.io/v1
-kind: HelmRelease
+# Source: crossplane/templates/rbac-manager-serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
 metadata:
+  namespace: crossplane-system
+  name: rbac-manager
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+---
+# Source: crossplane/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: crossplane-system
+  name: crossplane
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+imagePullSecrets:
+- name: dockerhub
+---
+# Source: crossplane/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.crossplane.io/aggregate-to-crossplane: "true"
+rules: []
+---
+# Source: crossplane/templates/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:system:aggregate-to-crossplane
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+    crossplane.io/scope: "system"
+    rbac.crossplane.io/aggregate-to-crossplane: "true"
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - "*"
+- apiGroups:
+  - apiextensions.crossplane.io
+  - pkg.crossplane.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - extensions
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - delete
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - watch
+---
+# Source: crossplane/templates/rbac-manager-allowed-provider-permissions.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:allowed-provider-permissions
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.crossplane.io/aggregate-to-allowed-provider-permissions: "true"
+---
+# Source: crossplane/templates/rbac-manager-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane-rbac-manager
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.crossplane.io
+  resources:
+  - compositeresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pkg.crossplane.io
+  resources:
+  - providerrevisions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  - roles
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  # The RBAC manager may grant access it does not have.
+  - escalate
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterroles
+  verbs:
+  - bind
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
+  verbs:
+  - "*"
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - create
+  - update
+  - patch
+  - watch
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane-admin
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.crossplane.io/aggregate-to-admin: "true"
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane-edit
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.crossplane.io/aggregate-to-edit: "true"
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane-view
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.crossplane.io/aggregate-to-view: "true"
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane-browse
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.crossplane.io/aggregate-to-browse: "true"
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-admin
+  labels:
+    rbac.crossplane.io/aggregate-to-admin: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane administrators have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+# Crossplane administrators must create provider credential secrets, and may
+# need to read or otherwise interact with connection secrets. They may also need
+# to create or annotate namespaces.
+- apiGroups: [""]
+  resources: [secrets, namespaces]
+  verbs: ["*"]
+# Crossplane administrators have access to view the roles that they may be able
+# to grant to other subjects.
+- apiGroups: [rbac.authorization.k8s.io]
+  resources: [clusterroles, roles]
+  verbs: [get, list, watch]
+# Crossplane administrators have access to grant the access they have to other
+# subjects.
+- apiGroups: [rbac.authorization.k8s.io]
+  resources: [clusterrolebindings, rolebindings]
+  verbs: ["*"]
+# Crossplane administrators have full access to built in Crossplane types.
+- apiGroups:
+  - apiextensions.crossplane.io
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups:
+  - pkg.crossplane.io
+  resources: [providers, configurations, providerrevisions, configurationrevisions]
+  verbs: ["*"]
+# Crossplane administrators have access to view CRDs in order to debug XRDs.
+- apiGroups: [apiextensions.k8s.io]
+  resources: [customresourcedefinitions]
+  verbs: [get, list, watch]
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-edit
+  labels:
+    rbac.crossplane.io/aggregate-to-edit: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane editors have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+# Crossplane editors must create provider credential secrets, and may need to
+# read or otherwise interact with connection secrets.
+- apiGroups: [""]
+  resources: [secrets]
+  verbs: ["*"]
+# Crossplane editors may see which namespaces exist, but not edit them.
+- apiGroups: [""]
+  resources: [namespaces]
+  verbs: [get, list, watch]
+# Crossplane editors have full access to built in Crossplane types.
+- apiGroups:
+  - apiextensions.crossplane.io
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups:
+  - pkg.crossplane.io
+  resources: [providers, configurations, providerrevisions, configurationrevisions]
+  verbs: ["*"]
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-view
+  labels:
+    rbac.crossplane.io/aggregate-to-view: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane viewers have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+# Crossplane viewers may see which namespaces exist.
+- apiGroups: [""]
+  resources: [namespaces]
+  verbs: [get, list, watch]
+# Crossplane viewers have read-only access to built in Crossplane types.
+- apiGroups:
+  - apiextensions.crossplane.io
+  resources: ["*"]
+  verbs: [get, list, watch]
+- apiGroups:
+  - pkg.crossplane.io
+  resources: [providers, configurations, providerrevisions, configurationrevisions]
+  verbs: [get, list, watch]
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-browse
+  labels:
+    rbac.crossplane.io/aggregate-to-browse: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane browsers have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+# Crossplane browsers have read-only access to compositions and XRDs. This
+# allows them to discover and select an appropriate composition when creating a
+# resource claim.
+- apiGroups:
+  - apiextensions.crossplane.io
+  resources: ["*"]
+  verbs: [get, list, watch]
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+# The below ClusterRoles are aggregated to the namespaced RBAC roles created by
+# the Crossplane RBAC manager when it is running in --manage=All mode.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-ns-admin
+  labels:
+    rbac.crossplane.io/aggregate-to-ns-admin: "true"
+    rbac.crossplane.io/base-of-ns-admin: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane namespace admins have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+# Crossplane namespace admins may need to read or otherwise interact with
+# resource claim connection secrets.
+- apiGroups: [""]
+  resources: [secrets]
+  verbs: ["*"]
+# Crossplane namespace admins have access to view the roles that they may be
+# able to grant to other subjects.
+- apiGroups: [rbac.authorization.k8s.io]
+  resources: [roles]
+  verbs: [get, list, watch]
+# Crossplane namespace admins have access to grant the access they have to other
+# subjects.
+- apiGroups: [rbac.authorization.k8s.io]
+  resources: [rolebindings]
+  verbs: ["*"]
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-ns-edit
+  labels:
+    rbac.crossplane.io/aggregate-to-ns-edit: "true"
+    rbac.crossplane.io/base-of-ns-edit: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane namespace editors have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+# Crossplane namespace editors may need to read or otherwise interact with
+# resource claim connection secrets.
+- apiGroups: [""]
+  resources: [secrets]
+  verbs: ["*"]
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: crossplane-system
+  name: crossplane:aggregate-to-ns-view
+  labels:
+    rbac.crossplane.io/aggregate-to-ns-view: "true"
+    rbac.crossplane.io/base-of-ns-view: "true"
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+rules:
+# Crossplane namespace viewers have access to view events.
+- apiGroups: [""]
+  resources: [events]
+  verbs: [get, list, watch]
+---
+# Source: crossplane/templates/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  namespace: crossplane-system
+  name: crossplane
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: crossplane
+subjects:
+- kind: ServiceAccount
   name: crossplane
   namespace: crossplane-system
-spec:
-  releaseName: crossplane
-  chart:
-    repository: https://charts.crossplane.io/master/
-    name: crossplane
-    version: 1.0.0
-  values:
-    image:
-      repository: crossplane/crossplane
-      tag: v1.1.0
-    leaderElection: false
-    rbacManager:
-      deploy: false
 ---
+# Source: crossplane/templates/rbac-manager-clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  namespace: crossplane-system
+  name: crossplane-rbac-manager
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: crossplane-rbac-manager
+subjects:
+- kind: ServiceAccount
+  name: rbac-manager
+  namespace: crossplane-system
+---
+# Source: crossplane/templates/rbac-manager-managed-clusterroles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  namespace: crossplane-system
+  name: crossplane-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: crossplane-admin
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: crossplane:masters
+---
+# Source: crossplane/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: crossplane-system
+  name: crossplane
+  labels:
+    app: crossplane
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crossplane
+      release: crossplane
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: crossplane
+        release: crossplane
+    spec:
+      serviceAccountName: crossplane
+      containers:
+      - image: crossplane/crossplane:v1.0.0
+        imagePullPolicy: Always
+        name: crossplane
+        resources:
+            limits:
+              cpu: 100m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+        securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 2000
+            runAsUser: 2000
+        env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: LEADER_ELECTION
+            value: "true"
+        volumeMounts:
+          - mountPath: /cache
+            name: package-cache
+      volumes:
+      - name: package-cache
+        emptyDir:
+          medium: 
+          sizeLimit: 5Mi
+---
+# Source: crossplane/templates/rbac-manager-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: crossplane-system
+  name: crossplane-rbac-manager
+  labels:
+    app: crossplane-rbac-manager
+    chart: crossplane-1.0.0
+    release: crossplane
+    heritage: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crossplane-rbac-manager
+      release: crossplane
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: crossplane-rbac-manager
+        release: crossplane
+    spec:
+      serviceAccountName: rbac-manager
+      containers:
+      - image: crossplane/crossplane:v1.0.0
+        args:
+        - rbac
+        - --manage=All
+        - --provider-clusterrole=crossplane:allowed-provider-permissions
+        imagePullPolicy: Always
+        name: crossplane
+        resources:
+            limits:
+              cpu: 100m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+        securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+        env:
+          - name: LEADER_ELECTION
+            value: "true"
+---
+# Source: crossplane/templates/lock.yaml
+apiVersion: pkg.crossplane.io/v1alpha1
+kind: Lock
+metadata:
+  namespace: crossplane-system
+  name: lock
+---
+# Source: crossplane/templates/provider.yaml
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
-  name: default
   namespace: crossplane-system
+  name: crossplane-provider-aws
 spec:
   package: crossplane/provider-aws:master
 ---
 apiVersion: aws.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
-  name: default
+  name: crossplane-provider-aws
+  namespace: crossplane-system
 spec:
   credentials:
     source: InjectedIdentity
@@ -42,10 +704,68 @@ spec:
 apiVersion: pkg.crossplane.io/v1alpha1
 kind: ControllerConfig
 metadata:
-  name: default
+  name: crossplane-provider-aws
+  namespace: crossplane-system
   annotations:
     eks.amazonaws.com/role-arn: arn:aws:iam::575558793282:role/role-eks-crossplane
 spec:
   podSecurityContext:
     fsGroup: 2000
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: crossplane-system
+  name: crossplane-provider-aws-e541e7d77aea
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::575558793282:role/role-eks-crossplane
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crossplane-provider-aws-e541e7d77aea
+  namespace: crossplane-system
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      pkg.crossplane.io/revision: crossplane-provider-aws-e541e7d77aea
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        pkg.crossplane.io/revision: crossplane-provider-aws-e541e7d77aea
+      name: provider-aws
+      namespace: crossplane-system
+    spec:
+      containers:
+      - image: crossplane/provider-aws-controller:v0.18.0-rc.0.10.g8767b03c
+        imagePullPolicy: IfNotPresent
+        name: provider-aws
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          runAsGroup: 2000
+          runAsNonRoot: true
+          runAsUser: 2000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 2000
+        runAsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 2000
+      serviceAccount: crossplane-provider-aws-e541e7d77aea
+      serviceAccountName: crossplane-provider-aws-e541e7d77aea
+      terminationGracePeriodSeconds: 30

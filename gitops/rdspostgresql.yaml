@@ -1,0 +1,26 @@
+apiVersion: database.aws.crossplane.io/v1beta1
+kind: RDSInstance
+metadata:
+  annotations:
+  name: rdspostgresql
+spec:
+  forProvider:
+    allocatedStorage: 20
+    dbInstanceClass: db.t2.small
+    engine: postgres
+    engineVersion: "9.6"
+    masterUsername: masteruser
+    region: eu-west-1
+    skipFinalSnapshotBeforeDeletion: true
+    tags:
+    - key: crossplane-kind
+      value: rdsinstance.database.aws.crossplane.io
+    - key: crossplane-name
+      value: rdspostgresql
+    - key: crossplane-providerconfig
+      value: crossplane-provider-aws
+  providerConfigRef:
+    name: crossplane-provider-aws
+  writeConnectionSecretToRef:
+    name: aws-rdspostgresql-conn
+    namespace: crossplane-system
